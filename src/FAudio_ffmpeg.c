@@ -35,7 +35,7 @@ extern "C" {
 }
 #endif /* __cplusplus */
 
-typedef struct FAudioFFmpeg
+typedef struct FAudioWMADEC
 {
 	AVCodecContext *av_ctx;
 	AVFrame *av_frame;
@@ -52,17 +52,17 @@ typedef struct FAudioFFmpeg
 	uint32_t convertSamples;
 	uint32_t convertOffset;
 	float *convertCache;
-} FAudioFFmpeg;
+} FAudioWMADEC;
 
-void FAudio_FFMPEG_reset(FAudioSourceVoice *voice)
+void FAudio_WMADEC_end_buffer(FAudioSourceVoice *voice)
 {
 	LOG_FUNC_ENTER(voice->audio)
-	voice->src.ffmpeg->encOffset = 0;
-	voice->src.ffmpeg->decOffset = 0;
+	voice->src.wmadec->encOffset = 0;
+	voice->src.wmadec->decOffset = 0;
 	LOG_FUNC_EXIT(voice->audio)
 }
 
-uint32_t FAudio_FFMPEG_init(FAudioSourceVoice *pSourceVoice, uint32_t type)
+uint32_t FAudio_WMADEC_init(FAudioSourceVoice *pSourceVoice, uint32_t type)
 {
 	AVCodecContext *av_ctx;
 	AVFrame *av_frame;
@@ -190,18 +190,18 @@ uint32_t FAudio_FFMPEG_init(FAudioSourceVoice *pSourceVoice, uint32_t type)
 		FAudio_assert(0 && "Got non-float format!!!");
 	}
 
-	pSourceVoice->src.ffmpeg = (FAudioFFmpeg *) pSourceVoice->audio->pMalloc(sizeof(FAudioFFmpeg));
-	FAudio_zero(pSourceVoice->src.ffmpeg, sizeof(FAudioFFmpeg));
+	pSourceVoice->src.wmadec = (FAudioWMADEC *) pSourceVoice->audio->pMalloc(sizeof(FAudioWMADEC));
+	FAudio_zero(pSourceVoice->src.wmadec, sizeof(FAudioWMADEC));
 
-	pSourceVoice->src.ffmpeg->av_ctx = av_ctx;
-	pSourceVoice->src.ffmpeg->av_frame = av_frame;
+	pSourceVoice->src.wmadec->av_ctx = av_ctx;
+	pSourceVoice->src.wmadec->av_frame = av_frame;
 	LOG_FUNC_EXIT(pSourceVoice->audio)
 	return 0;
 }
 
-void FAudio_FFMPEG_free(FAudioSourceVoice *voice)
+void FAudio_WMADEC_free(FAudioSourceVoice *voice)
 {
-	FAudioFFmpeg *ffmpeg = voice->src.ffmpeg;
+	FAudioWMADEC *ffmpeg = voice->src.wmadec;
 
 	LOG_FUNC_ENTER(voice->audio)
 
@@ -212,7 +212,7 @@ void FAudio_FFMPEG_free(FAudioSourceVoice *voice)
 	voice->audio->pFree(ffmpeg->convertCache);
 	voice->audio->pFree(ffmpeg->paddingBuffer);
 	voice->audio->pFree(ffmpeg);
-	voice->src.ffmpeg = NULL;
+	voice->src.wmadec = NULL;
 
 	LOG_FUNC_EXIT(voice->audio)
 }
@@ -220,12 +220,12 @@ void FAudio_FFMPEG_free(FAudioSourceVoice *voice)
 void FAudio_INTERNAL_ResizeConvertCache(FAudioVoice *voice, uint32_t samples)
 {
 	LOG_FUNC_ENTER(voice->audio)
-	if (samples > voice->src.ffmpeg->convertCapacity)
+	if (samples > voice->src.wmadec->convertCapacity)
 	{
-		voice->src.ffmpeg->convertCapacity = samples;
-		voice->src.ffmpeg->convertCache = (float*) voice->audio->pRealloc(
-			voice->src.ffmpeg->convertCache,
-			sizeof(float) * voice->src.ffmpeg->convertCapacity
+		voice->src.wmadec->convertCapacity = samples;
+		voice->src.wmadec->convertCache = (float*) voice->audio->pRealloc(
+			voice->src.wmadec->convertCache,
+			sizeof(float) * voice->src.wmadec->convertCapacity
 		);
 	}
 	LOG_FUNC_EXIT(voice->audio)
@@ -233,7 +233,7 @@ void FAudio_INTERNAL_ResizeConvertCache(FAudioVoice *voice, uint32_t samples)
 
 void FAudio_INTERNAL_FillConvertCache(FAudioVoice *voice, FAudioBuffer *buffer)
 {
-	FAudioFFmpeg *ffmpeg = voice->src.ffmpeg;
+	FAudioWMADEC *ffmpeg = voice->src.wmadec;
 	AVPacket avpkt = {0};
 	int averr;
 	uint32_t total_samples;
@@ -344,7 +344,7 @@ void FAudio_INTERNAL_DecodeFFMPEG(
 	float *decodeCache,
 	uint32_t samples
 ) {
-	FAudioFFmpeg *ffmpeg = voice->src.ffmpeg;
+	FAudioWMADEC *ffmpeg = voice->src.wmadec;
 	uint32_t decSampleSize = voice->src.format->nChannels * voice->src.format->wBitsPerSample / 8;
 	uint32_t outSampleSize = voice->src.format->nChannels * sizeof(float);
 	uint32_t done = 0, available, todo, cumulative;

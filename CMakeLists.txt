@@ -9,6 +9,7 @@ option(BUILD_UTILS "Build utils/ folder" OFF)
 option(BUILD_TESTS "Build tests/ folder for unit tests to be executed on the host against FAudio" OFF)
 if(WIN32)
 option(BUILD_CPP "Build cpp/ folder (COM wrapper for XAudio2)" OFF)
+option(PLATFORM_WIN32 "Enable native Win32 platform instead of SDL2" OFF)
 endif()
 option(XNASONG "Build with XNA_Song.c" ON)
 option(LOG_ASSERTIONS "Bind FAudio_assert to log, instead of platform's assert" OFF)
@@ -30,7 +31,7 @@ endif()
 # Version
 SET(LIB_MAJOR_VERSION "0")
 SET(LIB_MINOR_VERSION "21")
-SET(LIB_REVISION "04")
+SET(LIB_REVISION "08")
 SET(LIB_VERSION "${LIB_MAJOR_VERSION}.${LIB_MINOR_VERSION}.${LIB_REVISION}")
 
 # Build Type
@@ -98,10 +99,22 @@ add_library(FAudio
 	src/FAudio_internal_simd.c
 	src/FAudio_operationset.c
 	src/FAudio_platform_sdl2.c
+	src/FAudio_platform_win32.c
 	# Optional source files
 	src/XNA_Song.c
 	src/FAudio_ffmpeg.c
 )
+
+if(PLATFORM_WIN32)
+	target_link_libraries(FAudio PRIVATE -ldxguid -luuid -lwinmm -lole32 -ladvapi32 -luser32 -lmfplat -lmfreadwrite -lmfuuid -lpropsys)
+	target_compile_definitions(FAudio PUBLIC FAUDIO_WIN32_PLATFORM)
+	target_compile_definitions(FAudio PRIVATE HAVE_WMADEC=1)
+	set(PLATFORM_CFLAGS "-DFAUDIO_WIN32_PLATFORM")
+	set(GSTREAMER OFF)
+	set(XNASONG OFF)
+else()
+	set(PLATFORM_CFLAGS)
+endif()
 
 # Only disable DebugConfiguration in release builds
 if(NOT FORCE_ENABLE_DEBUGCONFIGURATION)
@@ -138,7 +151,7 @@ endif()
 # FFmpeg Support
 if(FFMPEG)
 	# Add the extra definition...
-	target_compile_definitions(FAudio PRIVATE HAVE_FFMPEG=1)
+	target_compile_definitions(FAudio PRIVATE HAVE_WMADEC=1 HAVE_FFMPEG=1)
 
 	# Find FFmpeg...
 	find_package(FFmpeg COMPONENTS
@@ -164,7 +177,9 @@ if(DUMP_VOICES)
 endif()
 
 # SDL2 Dependency
-if (DEFINED SDL2_INCLUDE_DIRS AND DEFINED SDL2_LIBRARIES)
+if (PLATFORM_WIN32)
+	message(STATUS "not using SDL2")
+elseif (DEFINED SDL2_INCLUDE_DIRS AND DEFINED SDL2_LIBRARIES)
 	message(STATUS "using pre-defined SDL2 variables SDL2_INCLUDE_DIRS and SDL2_LIBRARIES")
 	target_include_directories(FAudio PUBLIC "$<BUILD_INTERFACE:${SDL2_INCLUDE_DIRS}>")
 	target_link_libraries(FAudio PUBLIC ${SDL2_LIBRARIES})
@@ -458,11 +473,11 @@ install(
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
 	cmake/config.cmake.in
-	${CMAKE_CURRENT_BINARY_DIR}/generated/${PROJECT_NAME}-config.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/generated/${PROJECT_NAME}Config.cmake
 	INSTALL_DESTINATION ${FAudio_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )
 install(
-	FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/${PROJECT_NAME}-config.cmake
+	FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/${PROJECT_NAME}Config.cmake
 	DESTINATION ${FAudio_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )
 install(
