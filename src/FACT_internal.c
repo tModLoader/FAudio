@@ -3153,7 +3153,7 @@ uint32_t FACT_INTERNAL_ParseWaveBank(
 	FAudio_zero(wb->entryRefs, memsize);
 
 	/* FIXME: How much do we care about this? */
-	FAudio_assert(wb->streaming == isStreaming);
+	//FAudio_assert(wb->streaming == isStreaming);
 	wb->streaming = isStreaming;
 
 	/* WaveBank Entry Metadata */
