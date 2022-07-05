@@ -505,6 +505,9 @@ uint32_t FAudio_PlatformGetDeviceDetails(
 			sizeof(GUID)
 		);
 	}
+	else {
+		details->OutputFormat.dwChannelMask = GetMask(format->nChannels);
+	}
 
 	CoTaskMemFree(format);
 
