@@ -29,6 +29,7 @@
 #include <stdarg.h>
 
 #ifdef FAUDIO_WIN32_PLATFORM
+#include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

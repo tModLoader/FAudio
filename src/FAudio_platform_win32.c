@@ -26,12 +26,9 @@
 
 #ifdef FAUDIO_WIN32_PLATFORM
 
-#include "FAudio_internal.h"
-
 #include <stddef.h>
 
 #define COBJMACROS
-#include <windows.h>
 #include <mfidl.h>
 #include <mfapi.h>
 #include <mferror.h>
@@ -41,6 +38,8 @@
 #include <initguid.h>
 #include <audioclient.h>
 #include <mmdeviceapi.h>
+
+#include "FAudio_internal.h"
 
 DEFINE_GUID(IID_IAudioRenderClient, 0xf294acfc, 0x3146, 0x4483, 0xa7, 0xbf, 0xad, 0xdc, 0xa7, 0xc2, 0x60, 0xe2);
 DEFINE_GUID(IID_IAudioClient, 0x1cb9ad4c, 0xdbfa, 0x4c32, 0xb1, 0x78, 0xc2, 0xf5, 0x68, 0xa7, 0x03, 0xb2);
